@@ -100,7 +100,6 @@ impl AppState {
         let ek = EncodingKey::load(&config.auth.sk).context("Failed to load encoding key")?;
         let pos = config.server.db_url.rfind('/').expect("invalid db_url");
         let server_url = &config.server.db_url[..pos];
-        println!("server_url: {}", server_url);
         let tdb = TestPg::new(
             server_url.to_string(),
             std::path::Path::new("../migrations"),
