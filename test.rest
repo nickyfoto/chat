@@ -8,6 +8,7 @@ Content-Type: application/json
 
 {
     "fullname": "Alice Chen",
+    "workspace": "acme",
     "email": "alice@acme.org",
     "password": "123456"
 }
@@ -38,4 +39,8 @@ Content-Type: application/json
 
 ### get chat list
 GET http://localhost:6688/api/chat
+Authorization: Bearer {{token}}
+
+### get user list
+GET http://localhost:6688/api/users
 Authorization: Bearer {{token}}
