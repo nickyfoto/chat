@@ -14,12 +14,12 @@ use utils::{DecodingKey, EncodingKey};
 
 use axum::{
     middleware::from_fn_with_state,
-    routing::{get, patch, post},
+    routing::{get, post},
     Router,
 };
 pub use config::AppConfig;
 pub use error::{AppError, ErrorOutput};
-pub use models::User;
+pub use models::{Chat, CreateChat, User};
 
 #[derive(Debug, Clone)]
 pub(crate) struct AppState {
@@ -38,14 +38,15 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
     let state = AppState::try_new(config).await?;
     let api = Router::new()
         .route("/users", get(list_chat_users_handler))
-        .route("/chat", get(list_chats_handler).post(create_chat_handler))
+        .route("/chats", get(list_chats_handler).post(create_chat_handler))
         .route(
-            "/chat/:id",
-            patch(update_chat_handler)
+            "/chats/:id",
+            get(get_chat_handler)
+                .patch(update_chat_handler)
                 .delete(delete_chat_handler)
                 .post(send_message_handler),
         )
-        .route("/chat/:id/messages", get(list_messages_handler))
+        .route("/chats/:id/messages", get(list_messages_handler))
         .layer(from_fn_with_state(state.clone(), verify_token))
         .route("/signin", post(signin_handler))
         .route("/signup", post(signup_handler));
@@ -121,7 +122,7 @@ mod test_util {
     pub async fn get_test_pool(url: Option<&str>) -> (TestPg, PgPool) {
         let url = match url {
             Some(url) => url.to_string(),
-            None => "postgres://postgres:123456@localhost:5432".to_string(),
+            None => "postgres://postgres:postgres@localhost:5432".to_string(),
         };
 
         let tdb = TestPg::new(url, std::path::Path::new("../migrations"));

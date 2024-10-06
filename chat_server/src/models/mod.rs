@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
+pub use chat::CreateChat;
 pub use user::{CreateUser, SigninUser};
 
 mod chat;

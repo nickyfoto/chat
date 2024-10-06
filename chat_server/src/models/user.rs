@@ -93,7 +93,40 @@ impl User {
     }
 }
 
-impl ChatUser {}
+#[allow(dead_code)]
+impl ChatUser {
+    pub async fn fetch_by_ids(ids: &[i64], pool: &PgPool) -> Result<Vec<Self>, AppError> {
+        let users = sqlx::query_as(
+            r#"
+            SELECT id, fullname, email
+            FROM users
+            WHERE id = ANY($1)
+            ORDER BY id
+            "#,
+        )
+        .bind(ids)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(users)
+    }
+
+    pub async fn fetch_all(ws_id: i64, pool: &PgPool) -> Result<Vec<Self>, AppError> {
+        let users = sqlx::query_as(
+            r#"
+            SELECT id, fullname, email
+            FROM users
+            WHERE ws_id = $1
+            ORDER BY id
+            "#,
+        )
+        .bind(ws_id)
+        .fetch_all(pool)
+        .await?;
+
+        Ok(users)
+    }
+}
 
 fn hash_password(password: &str) -> Result<String, AppError> {
     let salt = SaltString::generate(&mut OsRng);
