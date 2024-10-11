@@ -31,6 +31,9 @@ pub enum AppError {
     #[error("jwt error: {0}")]
     JwtError(#[from] jwt_simple::Error),
 
+    #[error("io error: {0}")]
+    IoError(#[from] std::io::Error),
+
     #[error("http header parse error: {0}")]
     HttpHeaderError(#[from] axum::http::header::InvalidHeaderValue),
 }
@@ -53,6 +56,7 @@ impl IntoResponse for AppError {
             Self::JwtError(_) => StatusCode::FORBIDDEN,
             Self::HttpHeaderError(_) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::NotFound(_) => StatusCode::NOT_FOUND,
+            Self::IoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status, Json(ErrorOutput::new(self.to_string()))).into_response()
     }
