@@ -105,9 +105,8 @@ mod test_util {
     use sqlx::{Executor, PgPool};
     use sqlx_db_tester::TestPg;
     impl AppState {
-        pub async fn new_for_test(
-            config: AppConfig,
-        ) -> Result<(sqlx_db_tester::TestPg, Self), AppError> {
+        pub async fn new_for_test() -> Result<(sqlx_db_tester::TestPg, Self), AppError> {
+            let config = AppConfig::load()?;
             let dk = DecodingKey::load(&config.auth.pk).context("Failed to load decoding key")?;
             let ek = EncodingKey::load(&config.auth.sk).context("Failed to load encoding key")?;
             let pos = config.server.db_url.rfind('/').expect("invalid db_url");

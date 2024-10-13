@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{CreateUser, SigninUser},
-    AppError, AppState, ErrorOutput, User,
+    AppError, AppState, ErrorOutput,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,7 +15,7 @@ pub(crate) async fn signin_handler(
     State(state): State<AppState>,
     Json(input): Json<SigninUser>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = User::verify(&input, &state.pool).await?;
+    let user = state.verify(&input).await?;
     match user {
         Some(user) => {
             let token = state.ek.sign(user)?;
@@ -33,7 +33,7 @@ pub(crate) async fn signup_handler(
     State(state): State<AppState>,
     Json(input): Json<CreateUser>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = User::create(&input, &state.pool).await?;
+    let user = state.create_user(&input).await?;
     let token = state.ek.sign(user)?;
     let body = Json(AuthOutput { token });
     Ok((StatusCode::CREATED, body))
@@ -42,14 +42,12 @@ pub(crate) async fn signup_handler(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::AppConfig;
     use anyhow::Result;
     use http_body_util::BodyExt;
 
     #[tokio::test]
     async fn signup_should_work() -> Result<()> {
-        let config = AppConfig::load()?;
-        let (_tdb, state) = AppState::new_for_test(config).await?;
+        let (_tdb, state) = AppState::new_for_test().await?;
         let input = CreateUser::new("acme", "Tian Chen", "tye@acme.org", "password");
         let res = signup_handler(State(state), Json(input))
             .await?
@@ -63,8 +61,7 @@ mod tests {
 
     #[tokio::test]
     async fn signup_duplicate_user_should_409() -> Result<()> {
-        let config = AppConfig::load()?;
-        let (_tdb, state) = AppState::new_for_test(config).await?;
+        let (_tdb, state) = AppState::new_for_test().await?;
         let input = CreateUser::new("acme", "Tyr Chen", "tchen@acme.org", "123456");
         let res = signup_handler(State(state), Json(input))
             .await
@@ -78,8 +75,7 @@ mod tests {
 
     #[tokio::test]
     async fn signin_should_work() -> Result<()> {
-        let config = AppConfig::load()?;
-        let (_tdb, state) = AppState::new_for_test(config).await?;
+        let (_tdb, state) = AppState::new_for_test().await?;
         let email = "tchen@acme.org";
         let password = "123456";
         let input = SigninUser::new(email, password);
@@ -95,8 +91,7 @@ mod tests {
 
     #[tokio::test]
     async fn signin_with_non_exist_user_should_403() -> Result<()> {
-        let config = AppConfig::load()?;
-        let (_tdb, state) = AppState::new_for_test(config).await?;
+        let (_tdb, state) = AppState::new_for_test().await?;
         let email = "tchen1@acme.org";
         let password = "123456";
         let input = SigninUser::new(email, password);
