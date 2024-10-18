@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Multipart, Path, State},
+    extract::{Multipart, Path, Query, State},
     http::HeaderMap,
     response::IntoResponse,
     Extension, Json,
@@ -7,14 +7,25 @@ use axum::{
 use tokio::fs;
 use tracing::{info, warn};
 
-use crate::{models::ChatFile, AppError, AppState, User};
+use crate::{models::ChatFile, AppError, AppState, CreateMessage, ListMessages, User};
 
-pub(crate) async fn list_messages_handler() -> impl IntoResponse {
-    "List messages"
+pub(crate) async fn list_messages_handler(
+    State(state): State<AppState>,
+    Path(chat_id): Path<i64>,
+    Query(input): Query<ListMessages>,
+) -> Result<impl IntoResponse, AppError> {
+    let messages = state.list_messages(input, chat_id).await?;
+    Ok(Json(messages))
 }
 
-pub(crate) async fn send_message_handler() -> impl IntoResponse {
-    "Send message"
+pub(crate) async fn send_message_handler(
+    Extension(user): Extension<User>,
+    State(state): State<AppState>,
+    Path(chat_id): Path<i64>,
+    Json(input): Json<CreateMessage>,
+) -> Result<impl IntoResponse, AppError> {
+    let message = state.create_message(input, chat_id, user.id as _).await?;
+    Ok(Json(message))
 }
 
 pub(crate) async fn file_handler(
@@ -29,6 +40,7 @@ pub(crate) async fn file_handler(
     }
     let base_dir = &state.config.server.base_dir.join(ws_id.to_string());
     let path = base_dir.join(path);
+    info!("File path: {:?}", path);
     if !path.exists() {
         return Err(AppError::NotFound("File doesn't exist".to_string()));
     }
@@ -45,7 +57,7 @@ pub(crate) async fn upload_handler(
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, AppError> {
     let ws_id = user.ws_id as u64;
-    let base_dir = state.config.server.base_dir.join(ws_id.to_string());
+    let base_dir = &state.config.server.base_dir;
     let mut files = vec![];
     while let Some(field) = multipart.next_field().await.unwrap() {
         let filename = field.file_name().map(|name| name.to_string());
@@ -53,15 +65,15 @@ pub(crate) async fn upload_handler(
             warn!("Failed to read multipart field");
             continue;
         };
-        let file = ChatFile::new(&filename, &data);
-        let path = file.path(&base_dir);
+        let file = ChatFile::new(ws_id, &filename, &data);
+        let path = file.path(base_dir);
         if path.exists() {
             info!("File {} already exists {:?}", filename, path);
         } else {
             fs::create_dir_all(path.parent().expect("file path parent should exist")).await?;
             fs::write(path, data).await?;
         }
-        files.push(file.url(ws_id));
+        files.push(file.url());
     }
     Ok(Json(files))
 }

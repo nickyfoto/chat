@@ -36,6 +36,12 @@ pub enum AppError {
 
     #[error("http header parse error: {0}")]
     HttpHeaderError(#[from] axum::http::header::InvalidHeaderValue),
+
+    #[error("create message error: {0}")]
+    CreateMessageError(String),
+
+    #[error("{0}")]
+    ChatFileError(String),
 }
 
 impl ErrorOutput {
@@ -57,6 +63,8 @@ impl IntoResponse for AppError {
             Self::HttpHeaderError(_) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::NotFound(_) => StatusCode::NOT_FOUND,
             Self::IoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::CreateMessageError(_) => StatusCode::BAD_REQUEST,
+            Self::ChatFileError(_) => StatusCode::BAD_REQUEST,
         };
         (status, Json(ErrorOutput::new(self.to_string()))).into_response()
     }
