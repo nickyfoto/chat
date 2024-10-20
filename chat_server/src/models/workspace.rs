@@ -1,8 +1,6 @@
-use sqlx::PgPool;
-
 use crate::{AppError, AppState};
 
-use super::{ChatUser, Workspace};
+use chat_core::Workspace;
 
 impl AppState {
     pub async fn find_workspace_by_name(&self, name: &str) -> Result<Option<Workspace>, AppError> {
@@ -30,7 +28,7 @@ impl AppState {
     }
 
     #[allow(dead_code)]
-    pub async fn find_workspace_by_id(&self, id: u64) -> Result<Option<ChatUser>, AppError> {
+    pub async fn find_workspace_by_id(&self, id: u64) -> Result<Option<Workspace>, AppError> {
         let ws = sqlx::query_as(
             r#"
             SELECT id, name, owner_id, created_at
@@ -43,10 +41,12 @@ impl AppState {
         .await?;
         Ok(ws)
     }
-}
 
-impl Workspace {
-    pub async fn update_owner(&self, owner_id: u64, pool: &PgPool) -> Result<Self, AppError> {
+    pub async fn update_workspace_owner(
+        &self,
+        id: u64,
+        owner_id: u64,
+    ) -> Result<Workspace, AppError> {
         let ws = sqlx::query_as(
             r#"
             UPDATE workspaces
@@ -56,8 +56,8 @@ impl Workspace {
             "#,
         )
         .bind(owner_id as i64)
-        .bind(self.id)
-        .fetch_one(pool)
+        .bind(id as i64)
+        .fetch_one(&self.pool)
         .await?;
         Ok(ws)
     }
@@ -81,7 +81,9 @@ mod tests {
         assert_eq!(ws.name, "test");
         assert_eq!(user.ws_id, ws.id);
 
-        let ws = ws.update_owner(user.id as _, &state.pool).await?;
+        let ws = state
+            .update_workspace_owner(ws.id as _, user.id as _)
+            .await?;
         assert_eq!(ws.owner_id, user.id);
         Ok(())
     }

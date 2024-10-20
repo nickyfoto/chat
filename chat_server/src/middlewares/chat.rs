@@ -4,7 +4,8 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use crate::{AppError, AppState, User};
+use crate::{AppError, AppState};
+use chat_core::User;
 
 pub async fn verify_chat(State(state): State<AppState>, req: Request, next: Next) -> Response {
     let (mut parts, body) = req.into_parts();
@@ -36,8 +37,8 @@ mod tests {
     use tower::ServiceExt;
 
     use super::*;
-    use crate::middlewares::verify_token;
     use anyhow::Result;
+    use chat_core::middlewares::verify_token;
 
     async fn handler(_req: Request) -> impl IntoResponse {
         (StatusCode::OK, "OK")
@@ -52,7 +53,7 @@ mod tests {
         let app = Router::new()
             .route("/chat/:id/messages", get(handler))
             .layer(from_fn_with_state(state.clone(), verify_chat))
-            .layer(from_fn_with_state(state.clone(), verify_token))
+            .layer(from_fn_with_state(state.clone(), verify_token::<AppState>))
             .with_state(state);
 
         let req = Request::builder()

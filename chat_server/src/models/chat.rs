@@ -1,6 +1,6 @@
 use crate::{AppError, AppState};
 
-use super::{Chat, ChatType};
+use chat_core::{Chat, ChatType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

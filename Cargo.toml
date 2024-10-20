@@ -1,25 +1,35 @@
 [workspace]
-members = ["chat_server", "notify_server"]
+members = ["chat_core", "chat_server", "notify_server"]
 resolver = "2"
 
 [workspace.dependencies]
-anyhow = "1.0.82"
-axum = { version = "0.7.5", features = [
+anyhow = "1.0.90"
+axum = { version = "0.7.7", features = [
     "http2",
     "query",
     "tracing",
     "multipart",
     # "macros",
 ] }
+axum-extra = { version = "0.9.3", features = ["typed-header"] }
+chrono = { version = "0.4.38", features = ["serde"] }
+chat-core = { path = "./chat_core" }
+jwt-simple = "0.12.9"
 serde = { version = "1.0.198", features = ["derive"] }
 serde_yaml = "0.9.34"
-sqlx = { version = "0.7.4", features = [
+sqlx = { version = "0.8.2", features = [
     "postgres",
     "runtime-tokio",
     "chrono",
     "tls-rustls",
 ] }
-thiserror = "1.0.59"
+thiserror = "1.0.64"
 tokio = { version = "1.37.0", features = ["rt", "rt-multi-thread", "macros"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tower = "0.5.1"
+tower-http = { version = "0.6.1", features = [
+    "compression-full",
+    "fs",
+    "trace",
+] }

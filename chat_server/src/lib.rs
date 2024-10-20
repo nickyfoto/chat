@@ -3,15 +3,17 @@ mod error;
 mod handlers;
 mod middlewares;
 mod models;
-mod utils;
 
 use anyhow::Context;
+use chat_core::{
+    middlewares::{set_layer, verify_token, TokenVerify},
+    DecodingKey, EncodingKey, User,
+};
 use handlers::*;
-use middlewares::{set_layer, verify_chat, verify_token};
+use middlewares::verify_chat;
 use sqlx::PgPool;
 use std::{fmt, ops::Deref, sync::Arc};
 use tokio::fs;
-use utils::{DecodingKey, EncodingKey};
 
 use axum::{
     middleware::from_fn_with_state,
@@ -20,7 +22,7 @@ use axum::{
 };
 pub use config::AppConfig;
 pub use error::{AppError, ErrorOutput};
-pub use models::{Chat, CreateChat, CreateMessage, ListMessages, Message, User};
+pub use models::{CreateChat, CreateMessage, ListMessages};
 
 #[derive(Debug, Clone)]
 pub(crate) struct AppState {
@@ -53,7 +55,7 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
         .nest("/chats", chat)
         .route("/upload", post(upload_handler))
         .route("/files/:ws_id/*path", get(file_handler))
-        .layer(from_fn_with_state(state.clone(), verify_token))
+        .layer(from_fn_with_state(state.clone(), verify_token::<AppState>))
         .route("/signin", post(signin_handler))
         .route("/signup", post(signup_handler));
     let app = Router::new()
@@ -64,7 +66,7 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
 }
 
 impl AppState {
-    pub async fn try_new(config: AppConfig) -> Result<Self, AppError> {
+    pub async fn try_new(config: AppConfig) -> Result<AppState, AppError> {
         fs::create_dir_all(&config.server.base_dir)
             .await
             .context("Failed to create base_dir directory")?;
@@ -89,6 +91,13 @@ impl fmt::Debug for AppStateInner {
         f.debug_struct("AppStateInner")
             .field("config", &self.config)
             .finish()
+    }
+}
+
+impl TokenVerify for AppState {
+    type Error = AppError;
+    fn verify(&self, token: &str) -> Result<User, Self::Error> {
+        Ok(self.dk.verify(token)?)
     }
 }
 

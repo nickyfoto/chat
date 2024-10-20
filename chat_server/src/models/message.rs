@@ -2,7 +2,9 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AppError, AppState, Message};
+use crate::{AppError, AppState};
+
+use chat_core::Message;
 
 use super::ChatFile;
 
