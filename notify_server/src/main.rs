@@ -11,10 +11,10 @@ async fn main() -> Result<()> {
 
     let addr = "0.0.0.0:6687";
 
-    let app = get_router();
+    let (app, state) = get_router();
     let listener = TcpListener::bind(&addr).await?;
     info!("Listening on: {}", addr);
-    setup_pg_listener().await?;
+    setup_pg_listener(state).await?;
 
     axum::serve(listener, app.into_make_service()).await?;
 
