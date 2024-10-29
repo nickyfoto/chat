@@ -20,7 +20,7 @@
     <h1>Server Sent Events</h1>
 
     <script lang="javascript">
-      var source = new EventSource("/events");
+      var source = new EventSource(`/events?access_token=${token}`);
       source.onmessage = function(event) {
         console.log("Got:", event.data);
       };
