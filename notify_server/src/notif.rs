@@ -9,7 +9,7 @@ use sqlx::postgres::PgListener;
 use tracing::info;
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "event")]
 pub enum AppEvent {
     NewChat(Chat),
     AddToChat(Chat),

@@ -1,6 +1,6 @@
 use axum::{
     extract::{Multipart, Path, Query, State},
-    http::HeaderMap,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     Extension, Json,
 };
@@ -26,7 +26,7 @@ pub(crate) async fn send_message_handler(
     Json(input): Json<CreateMessage>,
 ) -> Result<impl IntoResponse, AppError> {
     let message = state.create_message(input, chat_id, user.id as _).await?;
-    Ok(Json(message))
+    Ok((StatusCode::CREATED, Json(message)))
 }
 
 pub(crate) async fn file_handler(
